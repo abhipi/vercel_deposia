@@ -55,7 +55,6 @@ This Gradio app allows you to:
 4. Create professional avatar images using DALL-E
 
 Prerequisites:
-- Deposia API server running on http://localhost:8000
 - OpenAI API key set as environment variable
 - Pipenv environment set up
 
@@ -63,7 +62,9 @@ Setup Instructions:
 1. Install pipenv: pip install pipenv
 2. Install dependencies: pipenv install
 3. Set environment variables in .env file or export them
-4. Start API server: pipenv run uvicorn api.server:app --host 0.0.0.0 --port 8000 --reload
+
+The app connects to the hosted Deposia API at:
+https://vercel-deposia-git-main-abhipis-projects.vercel.app
 
 Starting Gradio app...
 """

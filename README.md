@@ -18,7 +18,7 @@ vercel_deposia/
 ├── gradio_app.py           # Gradio interface for PDF processing
 ├── launch_gradio.py        # Gradio app launcher script
 ├── config.toml             # Configuration file for OpenAI and API settings
-├── Pipfile                 # Python dependencies
+├── Pipfile                 # Python dependencies (pipenv)
 ├── vercel.json            # Vercel deployment configuration
 └── README.md              # This file
 ```
@@ -46,33 +46,53 @@ vercel_deposia/
 
 ## Quick Start
 
-### Local Development
+### Using the Hosted API
 
-1. **Install dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   # or using pipenv
-   pipenv install
-   ```
+The Deposia API is deployed and running at: **https://vercel-deposia-git-main-abhipis-projects.vercel.app**
 
-2. **Set up environment:**
+1. **Create an expert witness avatar:**
    ```bash
-   export OPENAI_API_KEY="your-openai-api-key"
-   ```
-
-3. **Run the server:**
-   ```bash
-   uvicorn api.server:app --host 0.0.0.0 --port 8000 --reload
-   ```
-
-4. **Create an expert witness avatar:**
-   ```bash
-   curl -X POST "http://localhost:8000/avatar/create-image" \
+   curl -X POST "https://vercel-deposia-git-main-abhipis-projects.vercel.app/avatar/create-image" \
      -H "Content-Type: application/json" \
      -d '{
        "text_query": "Need a cybersecurity expert for a data breach case",
        "expert_type": "technical"
      }'
+   ```
+
+### For Users (Using Hosted API)
+
+```bash
+# Install dependencies
+pipenv install
+
+# Launch the Gradio interface
+pipenv run python launch_gradio.py
+```
+
+### Local Development (Optional)
+
+If you want to run the API locally for development:
+
+1. **Install pipenv (if not already installed):**
+   ```bash
+   pip install pipenv
+   ```
+
+2. **Install dependencies:**
+   ```bash
+   pipenv install
+   ```
+
+3. **Set up environment:**
+   ```bash
+   export OPENAI_API_KEY="your-openai-api-key"
+   # or create a .env file in the project root
+   ```
+
+4. **Run the server:**
+   ```bash
+   pipenv run uvicorn api.server:app --host 0.0.0.0 --port 8000 --reload
    ```
 
 ### Response Format
@@ -98,21 +118,23 @@ This repository is configured for automatic Vercel deployment. The `vercel.json`
 
 ## Gradio App - PDF Document Processing
 
-For easy document processing, use the included Gradio web interface:
+For easy document processing, use the included Gradio web interface that connects to the hosted API:
 
 ### Launch the Gradio App
 
-1. **Start the API server** (in one terminal):
+The Gradio app automatically connects to the hosted API at https://vercel-deposia-git-main-abhipis-projects.vercel.app
+
+1. **Install dependencies:**
    ```bash
-   uvicorn api.server:app --host 0.0.0.0 --port 8000 --reload
+   pipenv install
    ```
 
-2. **Launch the Gradio interface** (in another terminal):
+2. **Launch the Gradio interface:**
    ```bash
-   python launch_gradio.py
+   pipenv run python launch_gradio.py
    ```
 
-3. **Access the interface**:
+3. **Access the interface:**
    - Local: `http://localhost:7860`
    - Public URL will be displayed in the terminal
 
@@ -180,12 +202,47 @@ async def my_endpoint():
     return my_function()
 ```
 
+### Development Commands
+
+```bash
+# Install dependencies
+pipenv install
+
+# Install dev dependencies
+pipenv install --dev
+
+# Test the hosted API
+pipenv run python test_api.py
+
+# Run Gradio interface (connects to hosted API)
+pipenv run python launch_gradio.py
+
+# Run local API server (for development only)
+pipenv run uvicorn api.server:app --host 0.0.0.0 --port 8000 --reload
+
+# Activate virtual environment
+pipenv shell
+
+# Check dependency tree
+pipenv graph
+```
+
+### Testing the Hosted API
+
+Use the included test script to verify the hosted API is working:
+
+```bash
+pipenv run python test_api.py
+```
+
+This will test all endpoints and provide a detailed report of API functionality.
+
 ## Contributing
 
 1. Follow the existing code structure and patterns
 2. Add appropriate error handling for all new functions
 3. Update this README when adding new major features
-4. Test locally before deploying
+4. Test locally before deploying using pipenv
 
 ## Support
 

@@ -15,7 +15,9 @@ import json
 from typing import Tuple, Optional
 
 # Configuration
-API_BASE_URL = "http://localhost:8000"  # Update this for your deployment
+API_BASE_URL = (
+    "https://vercel-deposia-git-main-abhipis-projects.vercel.app"  # Hosted Deposia API
+)
 AVATAR_ENDPOINT = f"{API_BASE_URL}/avatar/create-image"
 STATUS_ENDPOINT = f"{API_BASE_URL}/avatar/status"
 
