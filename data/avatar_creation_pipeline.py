@@ -1,11 +1,10 @@
 """
 Avatar Creation Pipeline Module
 
-This module creates expert witness avatar personas with images using OpenAI Responses API.
+This module creates expert witness avatar personas with images using OpenAI API.
 """
 
 import os
-import base64
 from openai import OpenAI
 from typing import Dict, Any
 
@@ -39,15 +38,14 @@ except ImportError:
 DEFAULT_CONFIG = {
     "openai": {
         "chat_model": "gpt-4o",
-        "image_model": "gpt-4o",  # Using GPT-4o for image generation via Responses API
+        "image_model": "dall-e-3",
         "max_tokens": 1500,
         "temperature": 0.7,
     },
     "image_generation": {
-        "size": "1024x1536",  # Portrait format
-        "quality": "medium",  # Medium quality as requested
-        "background": "transparent",
-        "output_format": "png",
+        "size": "1024x1024",
+        "quality": "standard",
+        "n": 1,
     },
 }
 
@@ -77,14 +75,14 @@ def create_avatar_image(
     text_query: str, expert_type: str = "general"
 ) -> Dict[str, Any]:
     """
-    Create an expert witness persona and generate an avatar image using OpenAI Responses API.
+    Create an expert witness persona and generate an avatar image using OpenAI API.
 
     Args:
         text_query (str): User's text query describing the expert witness needed
         expert_type (str): Type of expert (technical, medical, financial, academic, general)
 
     Returns:
-        dict: Result containing persona details and image data
+        dict: Result containing persona details and image URL
     """
     try:
         # Get OpenAI API key from environment
@@ -102,9 +100,10 @@ def create_avatar_image(
         chat_model = CONFIG["openai"]["chat_model"]
         max_tokens = CONFIG["openai"]["max_tokens"]
         temperature = CONFIG["openai"]["temperature"]
+        image_model = CONFIG["openai"]["image_model"]
         image_size = CONFIG["image_generation"]["size"]
         image_quality = CONFIG["image_generation"]["quality"]
-        image_background = CONFIG["image_generation"]["background"]
+        image_n = CONFIG["image_generation"]["n"]
 
         # Step 1: Generate expert witness persona using GPT-4o
         persona_prompt = EXPERT_WITNESS_USER_PROMPT_TEMPLATE.format(
@@ -123,39 +122,18 @@ def create_avatar_image(
 
         expert_persona = persona_response.choices[0].message.content
 
-        # Step 2: Generate avatar image using Responses API with image_generation tool
+        # Step 2: Generate avatar image using DALL-E 3
         image_prompt = get_expert_image_prompt(expert_type, text_query)
 
-        # Use Responses API with image generation tool
-        response = client.responses.create(
-            model=chat_model,
-            input=f"Create a professional expert witness avatar image: {image_prompt}",
-            tools=[
-                {
-                    "type": "image_generation",
-                    "size": image_size,
-                    "quality": image_quality,
-                    "background": image_background,
-                }
-            ],
+        image_response = client.images.generate(
+            model=image_model,
+            prompt=image_prompt,
+            size=image_size,
+            quality=image_quality,
+            n=image_n,
         )
 
-        # Extract image data from response
-        image_data = [
-            output.result
-            for output in response.output
-            if output.type == "image_generation_call"
-        ]
-
-        if not image_data:
-            return {
-                "status": "error",
-                "message": "No image was generated in the response",
-            }
-
-        # Convert base64 image to data URL
-        image_base64 = image_data[0]
-        image_url = f"data:image/png;base64,{image_base64}"
+        image_url = image_response.data[0].url
 
         return {
             "status": "ok",
@@ -166,7 +144,7 @@ def create_avatar_image(
                 "expert_type": expert_type,
                 "query": text_query,
                 "avatar_id": f"expert_{hash(text_query) % 10000}",
-                "models_used": {"chat": chat_model, "image": chat_model},
+                "models_used": {"chat": chat_model, "image": image_model},
             },
         }
 
