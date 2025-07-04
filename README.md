@@ -13,7 +13,9 @@ vercel_deposia/
 ├── api/
 │   └── server.py           # Main FastAPI application
 ├── data/
-│   └── avatar_creation_pipeline.py  # Avatar processing functions
+│   ├── avatar_creation_pipeline.py  # Avatar processing functions
+│   └── prompts/            # Expert witness and image generation prompts
+├── config.toml             # Configuration file for OpenAI and API settings
 ├── Pipfile                 # Python dependencies
 ├── vercel.json            # Vercel deployment configuration
 └── README.md              # This file
@@ -35,8 +37,7 @@ vercel_deposia/
 
 ### Avatar Management
 - `GET /avatar/status` - Avatar pipeline status
-- `POST /avatar/create` - Create new avatar with configuration
-- `POST /avatar/validate` - Validate avatar configuration
+- `POST /avatar/create-image` - Create expert witness persona and avatar image using OpenAI
 
 ## Quick Start
 
@@ -49,15 +50,42 @@ vercel_deposia/
    pipenv install
    ```
 
-2. **Run the server:**
+2. **Set up environment:**
+   ```bash
+   export OPENAI_API_KEY="your-openai-api-key"
+   ```
+
+3. **Run the server:**
    ```bash
    uvicorn api.server:app --host 0.0.0.0 --port 8000 --reload
    ```
 
-3. **Access the API:**
-   - Server: `http://localhost:8000`
-   - Health check: `http://localhost:8000/health`
-   - Avatar status: `http://localhost:8000/avatar/status`
+4. **Create an expert witness avatar:**
+   ```bash
+   curl -X POST "http://localhost:8000/avatar/create-image" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "text_query": "Need a cybersecurity expert for a data breach case",
+       "expert_type": "technical"
+     }'
+   ```
+
+### Response Format
+
+The API returns:
+```json
+{
+  "status": "ok",
+  "message": "Expert witness avatar created successfully",
+  "data": {
+    "persona": "Detailed expert witness profile...",
+    "image_url": "https://generated-image-url.com/image.png",
+    "expert_type": "technical",
+    "query": "Need a cybersecurity expert for a data breach case",
+    "avatar_id": "expert_1234"
+  }
+}
+```
 
 ### Vercel Deployment
 
@@ -66,6 +94,12 @@ This repository is configured for automatic Vercel deployment. The `vercel.json`
 ## Configuration
 
 - **Environment Variables**: Configure via `.env` file or Vercel environment settings
+  - `OPENAI_API_KEY`: Required for avatar image generation and persona creation
+- **Configuration File**: `config.toml` contains OpenAI model settings and API parameters
+  - `chat_model`: OpenAI chat model (default: "gpt-4o")
+  - `image_model`: OpenAI image generation model (default: "dall-e-3")
+  - `max_tokens`: Maximum tokens for chat responses (default: 1500)
+  - `temperature`: Creativity level for responses (default: 0.7)
 - **CORS**: Currently set to allow all origins (`*`) - update for production
 - **Logging**: Configured to suppress excessive HTTP client logs
 
@@ -73,7 +107,10 @@ This repository is configured for automatic Vercel deployment. The `vercel.json`
 
 The `data/` folder contains modular functions that are dynamically imported by the server:
 
-- **avatar_creation_pipeline.py**: Avatar processing, validation, and creation functions
+- **avatar_creation_pipeline.py**: Expert witness avatar creation using OpenAI API
+- **prompts/**: Simple, focused prompts for avatar creation
+  - `expert_witness_prompts.py`: Core prompts for creating expert witness personas
+  - `image_generation_prompts.py`: DALL-E prompts for professional headshots
 - Add new modules to extend functionality
 
 ## Development

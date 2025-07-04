@@ -6,119 +6,72 @@ alwaysApply: false
 
 # Deposia API Development Patterns
 
-When working with the Deposia API, follow these established patterns for consistency and maintainability.
+Simple patterns for the streamlined Deposia avatar creation API.
 
-## Data Module Creation
+## Core Function Pattern
 
-When creating new modules in the `data/` folder:
+The main avatar creation function should:
 
-1. **File Structure**: Create files in `vercel_deposia/data/` with descriptive names
-2. **Function Design**: Each function should return a dictionary with `status` and `message` keys
-3. **Error Handling**: Include proper error handling and validation
-4. **Documentation**: Add clear docstrings for all functions
-
-Example data module structure:
 ```python
-def get_module_status():
+def create_avatar_image(text_query: str, expert_type: str = "general") -> Dict[str, Any]:
     """
-    Returns the status of the module.
-    
-    Returns:
-        dict: Status information with 'status' and 'message' keys
+    Create an expert witness persona and generate an avatar image using OpenAI API.
     """
-    return {
-        "status": "ok",
-        "message": "Module is operational",
-        "version": "1.0.0"
-    }
+    try:
+        # Get API key
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            return {"status": "error", "message": "API key not found"}
+        
+        # Use configuration from config.toml
+        client = OpenAI(api_key=api_key)
+        
+        # Generate persona and image
+        # Return structured response
+        return {
+            "status": "ok",
+            "data": {
+                "persona": "...",
+                "image_url": "...",
+                "expert_type": expert_type
+            }
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 ```
 
-## Dynamic Import Pattern
+## Simple Endpoint Pattern
 
-When importing modules from the data folder in `server.py`:
-
-1. **Import Section**: Add imports after the utility functions section
-2. **Error Handling**: Always wrap imports in try-catch blocks
-3. **Graceful Degradation**: Set functions to None if import fails
-4. **Required Attributes**: Specify required functions for validation
-
-Template:
 ```python
-# Import the [module_name] module
-try:
-    [module_name] = dynamic_import(
-        module_path=os.path.join(DATA_FOLDER, "[module_file].py"),
-        module_name="[module_name]",
-        required_attrs=["[required_function]"]
-    )
-    [function_name] = [module_name].[function_name]
-except (FileNotFoundError, ImportError, AttributeError) as e:
-    logger.warning(f"Could not import [module_name]: {e}")
-    [function_name] = None
+@app.post("/avatar/create-image")
+async def create_avatar_image_endpoint(request: AvatarImageRequest):
+    """Create an expert witness persona and avatar image."""
+    if create_avatar_image is None:
+        raise HTTPException(status_code=500, detail="Service not available")
+    
+    return create_avatar_image(request.text_query, request.expert_type)
 ```
 
-## Endpoint Creation Pattern
+## Configuration
 
-When creating new API endpoints:
+- Use `config.toml` for OpenAI model settings (gpt-4o, dall-e-3)
+- Store API keys in environment variables
+- Keep prompts simple and focused
 
-1. **Group Related Endpoints**: Use comment headers to separate endpoint groups
-2. **Error Checking**: Always check if imported functions are available
-3. **HTTP Status Codes**: Use appropriate HTTP status codes (500 for unavailable services)
-4. **Async Functions**: Use async/await for all endpoint functions
-5. **Documentation**: Include docstrings for all endpoints
+## Response Format
 
-Template:
-```python
-####################################################################################################
-# [FEATURE_NAME] ENDPOINTS
-####################################################################################################
-@app.get("/[endpoint_path]")
-async def [endpoint_function_name]():
-    """[Description of what this endpoint does]."""
-    if [imported_function] is None:
-        raise HTTPException(status_code=500, detail="[Service] not available")
-    
-    return [imported_function]()
-
-@app.post("/[endpoint_path]")
-async def [endpoint_function_name](request_data: dict = None):
-    """[Description of what this endpoint does]."""
-    if [imported_function] is None:
-        raise HTTPException(status_code=500, detail="[Service] not available")
-    
-    return [imported_function](request_data)
+Always return:
+```json
+{
+  "status": "ok|error", 
+  "message": "...",
+  "data": {...}
+}
 ```
 
-## Response Format Standards
+## Keep It Simple
 
-All API responses should follow consistent formats:
-
-- **Success Response**: `{"status": "ok", "message": "...", "data": {...}}`
-- **Error Response**: `{"status": "error", "message": "...", "error_code": "..."}`
-- **Status Response**: `{"status": "ok", "message": "...", "version": "..."}`
-
-## File Organization
-
-- **Server Code**: Keep all FastAPI code in `vercel_deposia/api/server.py`
-- **Business Logic**: Keep all business logic in `vercel_deposia/data/` modules
-- **Import Order**: 
-  1. Standard library imports
-  2. Third-party imports
-  3. Local imports
-  4. Dynamic imports (after utility functions)
-
-## Testing Endpoints
-
-When adding new endpoints, ensure they can be tested via:
-- Health check functionality
-- Proper error messages when services are unavailable
-- Consistent response formats
-
-## Common Patterns to Follow
-
-1. **Always** use the `dynamic_import()` utility function
-2. **Never** hardcode file paths - use `os.path.join(DATA_FOLDER, filename)`
-3. **Always** include error handling for import failures
-4. **Always** check function availability before calling
-5. **Always** use descriptive variable and function names
-6. **Always** include proper logging for debugging
+- One core function: create expert witness avatar with image
+- Minimal endpoints: status + create-image
+- Clean prompts: focused on expert witness creation
+- Clear error handling

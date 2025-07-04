@@ -14,6 +14,8 @@ langchain-openai = "*"
 python-dotenv = "*"
 httpx = "*"
 aiofiles = "*"
+toml = "*"
+openai = "*"
 
 [dev-packages]
 

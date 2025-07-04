@@ -88,16 +88,14 @@ try:
     avatar_pipeline = dynamic_import(
         module_path=os.path.join(DATA_FOLDER, "avatar_creation_pipeline.py"),
         module_name="avatar_pipeline",
-        required_attrs=["get_avatar_status"],
+        required_attrs=["create_avatar_image"],
     )
+    create_avatar_image = avatar_pipeline.create_avatar_image
     get_avatar_status = avatar_pipeline.get_avatar_status
-    create_avatar = avatar_pipeline.create_avatar
-    validate_avatar_config = avatar_pipeline.validate_avatar_config
 except (FileNotFoundError, ImportError, AttributeError) as e:
     logger.warning(f"Could not import avatar pipeline: {e}")
+    create_avatar_image = None
     get_avatar_status = None
-    create_avatar = None
-    validate_avatar_config = None
 
 ####################################################################################################
 # FASTAPI APP
@@ -151,22 +149,23 @@ async def avatar_status():
     return get_avatar_status()
 
 
-@app.post("/avatar/create")
-async def create_avatar_endpoint(avatar_config: dict = None):
-    """Create a new avatar with the given configuration."""
-    if create_avatar is None:
-        raise HTTPException(status_code=500, detail="Avatar creation not available")
+class AvatarImageRequest(BaseModel):
+    text_query: str = Field(..., description="Description of the expert witness needed")
+    expert_type: str = Field(
+        "general",
+        description="Type of expert witness (general, technical, medical, financial, academic)",
+    )
 
-    return create_avatar(avatar_config)
 
+@app.post("/avatar/create-image")
+async def create_avatar_image_endpoint(request: AvatarImageRequest):
+    """Create an expert witness persona and generate an avatar image using OpenAI API."""
+    if create_avatar_image is None:
+        raise HTTPException(
+            status_code=500, detail="Avatar image creation not available"
+        )
 
-@app.post("/avatar/validate")
-async def validate_config_endpoint(config: dict):
-    """Validate an avatar configuration."""
-    if validate_avatar_config is None:
-        raise HTTPException(status_code=500, detail="Avatar validation not available")
-
-    return validate_avatar_config(config)
+    return create_avatar_image(request.text_query, request.expert_type)
 
 
 ####################################################################################################

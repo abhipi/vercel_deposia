@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "72b34d82345e564823d521dba890e80132b1c5088681e574b7e5d9db150aab64"
+            "sha256": "19b304f135520fae934158acc1c14a7b75c5b532a116a69a277052e847a9f62b"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -471,7 +471,7 @@
                 "sha256:efc6dc8a792243c31f2f5674b670b3a95d46fa1c6a912b8e310d6f542e7b0712",
                 "sha256:f4bfbaa6096b1b7a200024784217defedf46a07c2eee1a498e94a1b5f8ec5728"
             ],
-            "markers": "python_version < '3.14' and (platform_machine == 'aarch64' or (platform_machine == 'ppc64le' or (platform_machine == 'x86_64' or (platform_machine == 'amd64' or (platform_machine == 'AMD64' or (platform_machine == 'win32' or platform_machine == 'WIN32'))))))",
+            "markers": "python_version < '3.14' and platform_machine == 'aarch64' or (platform_machine == 'ppc64le' or (platform_machine == 'x86_64' or (platform_machine == 'amd64' or (platform_machine == 'AMD64' or (platform_machine == 'win32' or platform_machine == 'WIN32')))))",
             "version": "==3.2.3"
         },
         "h11": {
@@ -670,7 +670,7 @@
                 "sha256:be313ec300633c857873ea3e44aece4dd7d0b11f131d385108b359d377a85bf7"
             ],
             "index": "pypi",
-            "markers": "python_full_version >= '3.9.0' and python_version < '4.0'",
+            "markers": "python_version < '4.0' and python_full_version >= '3.9.0'",
             "version": "==0.3.5"
         },
         "langgraph-checkpoint": {
@@ -899,6 +899,7 @@
                 "sha256:3d746fe5498f0dd72e0d9ab706f26c91c0f646bf7459e5629af8ba7c9dbdf090",
                 "sha256:988f31ade95e1ff0585af11cc5a64510225e4f5cd392698c675d0a9265b8e337"
             ],
+            "index": "pypi",
             "markers": "python_version >= '3.8'",
             "version": "==1.93.0"
         },
@@ -1608,6 +1609,15 @@
             ],
             "markers": "python_version >= '3.9'",
             "version": "==0.9.0"
+        },
+        "toml": {
+            "hashes": [
+                "sha256:806143ae5bfb6a3c6e736a764057db0e6a0e05e338b5630894a5f779cabb4f9b",
+                "sha256:b3bda1d108d5dd99f4a20d24d9c348e91c4db7ab1b749200bded2f839ccbe68f"
+            ],
+            "index": "pypi",
+            "markers": "python_version >= '2.6' and python_version not in '3.0, 3.1, 3.2, 3.3'",
+            "version": "==0.10.2"
         },
         "tqdm": {
             "hashes": [

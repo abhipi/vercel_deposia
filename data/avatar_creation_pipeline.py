@@ -1,57 +1,158 @@
 """
 Avatar Creation Pipeline Module
 
-This module contains functions for avatar creation and management.
+This module creates expert witness avatar personas with images using OpenAI API.
 """
+
+import os
+from openai import OpenAI
+from typing import Dict, Any
+
+# Try to import toml for config file parsing
+try:
+    import toml
+
+    TOML_AVAILABLE = True
+except ImportError:
+    TOML_AVAILABLE = False
+
+# Import prompts from the prompts package
+try:
+    from .prompts import (
+        EXPERT_WITNESS_SYSTEM_PROMPT,
+        EXPERT_WITNESS_USER_PROMPT_TEMPLATE,
+    )
+    from .prompts.image_generation_prompts import get_expert_image_prompt
+except ImportError:
+    # Fallback if prompts package is not available
+    EXPERT_WITNESS_SYSTEM_PROMPT = "You are an expert witness persona creator."
+    EXPERT_WITNESS_USER_PROMPT_TEMPLATE = (
+        "Create an expert witness persona based on: {user_query}"
+    )
+
+    def get_expert_image_prompt(expert_type="general", user_description=""):
+        return "Create a professional headshot portrait of an expert witness."
+
+
+# Default configuration
+DEFAULT_CONFIG = {
+    "openai": {
+        "chat_model": "gpt-4o",
+        "image_model": "dall-e-3",
+        "max_tokens": 1500,
+        "temperature": 0.7,
+    },
+    "image_generation": {"size": "1024x1024", "quality": "standard", "n": 1},
+}
+
+
+def load_config():
+    """Load configuration from config.toml file."""
+    config_path = os.path.join(os.path.dirname(__file__), "..", "config.toml")
+
+    if not TOML_AVAILABLE:
+        return DEFAULT_CONFIG
+
+    try:
+        if os.path.exists(config_path):
+            with open(config_path, "r") as f:
+                return toml.load(f)
+        else:
+            return DEFAULT_CONFIG
+    except Exception:
+        return DEFAULT_CONFIG
+
+
+# Load configuration
+CONFIG = load_config()
+
+
+def create_avatar_image(
+    text_query: str, expert_type: str = "general"
+) -> Dict[str, Any]:
+    """
+    Create an expert witness persona and generate an avatar image using OpenAI API.
+
+    Args:
+        text_query (str): User's text query describing the expert witness needed
+        expert_type (str): Type of expert (technical, medical, financial, academic, general)
+
+    Returns:
+        dict: Result containing persona details and image URL
+    """
+    try:
+        # Get OpenAI API key from environment
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            return {
+                "status": "error",
+                "message": "OpenAI API key not found in environment variables",
+            }
+
+        # Initialize OpenAI client
+        client = OpenAI(api_key=api_key)
+
+        # Get configuration values
+        chat_model = CONFIG["openai"]["chat_model"]
+        max_tokens = CONFIG["openai"]["max_tokens"]
+        temperature = CONFIG["openai"]["temperature"]
+        image_model = CONFIG["openai"]["image_model"]
+        image_size = CONFIG["image_generation"]["size"]
+        image_quality = CONFIG["image_generation"]["quality"]
+        image_n = CONFIG["image_generation"]["n"]
+
+        # Step 1: Generate expert witness persona using ChatGPT
+        persona_prompt = EXPERT_WITNESS_USER_PROMPT_TEMPLATE.format(
+            user_query=text_query
+        )
+
+        persona_response = client.chat.completions.create(
+            model=chat_model,
+            messages=[
+                {"role": "system", "content": EXPERT_WITNESS_SYSTEM_PROMPT},
+                {"role": "user", "content": persona_prompt},
+            ],
+            max_tokens=max_tokens,
+            temperature=temperature,
+        )
+
+        expert_persona = persona_response.choices[0].message.content
+
+        # Step 2: Generate avatar image using DALL-E
+        image_prompt = get_expert_image_prompt(expert_type, text_query)
+
+        image_response = client.images.generate(
+            model=image_model,
+            prompt=image_prompt,
+            size=image_size,
+            quality=image_quality,
+            n=image_n,
+        )
+
+        image_url = image_response.data[0].url
+
+        return {
+            "status": "ok",
+            "message": "Expert witness avatar created successfully",
+            "data": {
+                "persona": expert_persona,
+                "image_url": image_url,
+                "expert_type": expert_type,
+                "query": text_query,
+                "avatar_id": f"expert_{hash(text_query) % 10000}",
+                "models_used": {"chat": chat_model, "image": image_model},
+            },
+        }
+
+    except Exception as e:
+        return {"status": "error", "message": f"Error creating avatar: {str(e)}"}
 
 
 def get_avatar_status():
-    """
-    Returns the status of the avatar creation pipeline.
-
-    Returns:
-        dict: Status information
-    """
+    """Get the status of the avatar creation pipeline."""
     return {
         "status": "ok",
         "message": "Avatar creation pipeline is operational",
-        "pipeline_version": "1.0.0",
+        "chat_model": CONFIG["openai"]["chat_model"],
+        "image_model": CONFIG["openai"]["image_model"],
     }
-
-
-def create_avatar(avatar_config=None):
-    """
-    Main function to create an avatar.
-
-    Args:
-        avatar_config (dict, optional): Configuration for avatar creation
-
-    Returns:
-        dict: Avatar creation result
-    """
-    if avatar_config is None:
-        avatar_config = {}
-
-    # Placeholder for avatar creation logic
-    return {
-        "status": "ok",
-        "message": "Avatar creation process initiated",
-        "avatar_id": "avatar_001",
-        "config": avatar_config,
-    }
-
-
-def validate_avatar_config(config):
-    """
-    Validates avatar configuration.
-
-    Args:
-        config (dict): Avatar configuration to validate
-
-    Returns:
-        dict: Validation result
-    """
-    if not isinstance(config, dict):
-        return {"status": "error", "message": "Configuration must be a dictionary"}
-
-    return {"status": "ok", "message": "Avatar configuration is valid"}
