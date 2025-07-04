@@ -15,6 +15,8 @@ vercel_deposia/
 ├── data/
 │   ├── avatar_creation_pipeline.py  # Avatar processing functions
 │   └── prompts/            # Expert witness and image generation prompts
+├── gradio_app.py           # Gradio interface for PDF processing
+├── launch_gradio.py        # Gradio app launcher script
 ├── config.toml             # Configuration file for OpenAI and API settings
 ├── Pipfile                 # Python dependencies
 ├── vercel.json            # Vercel deployment configuration
@@ -28,6 +30,9 @@ vercel_deposia/
 - **Dynamic Module Loading**: Flexible import system for data folder functions
 - **CORS Support**: Cross-origin resource sharing enabled
 - **Vercel Optimized**: Configured for seamless Vercel deployment
+- **Gradio Interface**: User-friendly web interface for PDF document processing
+- **PDF Text Extraction**: Automatic text extraction from PDF documents
+- **Expert Witness Generation**: AI-powered expert witness persona creation
 
 ## API Endpoints
 
@@ -90,6 +95,44 @@ The API returns:
 ### Vercel Deployment
 
 This repository is configured for automatic Vercel deployment. The `vercel.json` file contains the necessary configuration for serverless deployment.
+
+## Gradio App - PDF Document Processing
+
+For easy document processing, use the included Gradio web interface:
+
+### Launch the Gradio App
+
+1. **Start the API server** (in one terminal):
+   ```bash
+   uvicorn api.server:app --host 0.0.0.0 --port 8000 --reload
+   ```
+
+2. **Launch the Gradio interface** (in another terminal):
+   ```bash
+   python launch_gradio.py
+   ```
+
+3. **Access the interface**:
+   - Local: `http://localhost:7860`
+   - Public URL will be displayed in the terminal
+
+### Using the Gradio Interface
+
+1. **Upload PDF**: Select a PDF document related to your legal case
+2. **Choose Expert Type**: Select from general, technical, medical, financial, or academic
+3. **Add Custom Instructions**: Optionally provide specific requirements
+4. **Generate Avatar**: Click to create expert witness persona and professional headshot
+
+### Example Workflow
+
+```
+PDF Document → Text Extraction → Expert Persona Generation → Avatar Image Creation
+```
+
+The interface will display:
+- **Expert Witness Persona**: Detailed professional profile
+- **Avatar Image**: Professional headshot suitable for legal proceedings
+- **Status Updates**: Real-time feedback on the generation process
 
 ## Configuration
 

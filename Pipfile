@@ -16,6 +16,10 @@ httpx = "*"
 aiofiles = "*"
 toml = "*"
 openai = "*"
+gradio = "*"
+PyPDF2 = "*"
+Pillow = "*"
+requests = "*"
 
 [dev-packages]
 
