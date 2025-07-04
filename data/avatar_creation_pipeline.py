@@ -1,10 +1,11 @@
 """
 Avatar Creation Pipeline Module
 
-This module creates expert witness avatar personas with images using OpenAI API.
+This module creates expert witness personas with images using OpenAI GPT and Together AI.
 """
 
 import os
+import requests
 from openai import OpenAI
 from typing import Dict, Any
 
@@ -16,36 +17,32 @@ try:
 except ImportError:
     TOML_AVAILABLE = False
 
-# Import prompts from the prompts package
-try:
-    from .prompts import (
-        EXPERT_WITNESS_SYSTEM_PROMPT,
-        EXPERT_WITNESS_USER_PROMPT_TEMPLATE,
-    )
-    from .prompts.image_generation_prompts import get_expert_image_prompt
-except ImportError:
-    # Fallback if prompts package is not available
-    EXPERT_WITNESS_SYSTEM_PROMPT = "You are an expert witness persona creator."
-    EXPERT_WITNESS_USER_PROMPT_TEMPLATE = (
-        "Create an expert witness persona based on: {user_query}"
-    )
+# Simple prompts - keep it minimal
+EXPERT_WITNESS_SYSTEM_PROMPT = "You are an expert witness creator. Create professional expert witness personas based on legal case content."
 
-    def get_expert_image_prompt(expert_type="general", user_description=""):
-        return "Create a professional headshot portrait of an expert witness."
+EXPERT_WITNESS_USER_PROMPT_TEMPLATE = (
+    "Create a professional expert witness persona for this case: {user_query}"
+)
+
+
+def get_simple_image_prompt(user_description=""):
+    """Generate a simple, direct image prompt."""
+    return (
+        f"Professional headshot portrait of an expert witness for: {user_description}"
+    )
 
 
 # Default configuration
 DEFAULT_CONFIG = {
     "openai": {
         "chat_model": "gpt-4o",
-        "image_model": "dall-e-3",
-        "max_tokens": 1500,
+        "max_tokens": 1000,
         "temperature": 0.7,
     },
-    "image_generation": {
-        "size": "1024x1024",
-        "quality": "standard",
-        "n": 1,
+    "together_ai": {
+        "image_model": "black-forest-labs/FLUX.1-kontext-dev",
+        "max_tokens": 512,
+        "temperature": 0.7,
     },
 }
 
@@ -75,42 +72,47 @@ def create_avatar_image(
     text_query: str, expert_type: str = "general"
 ) -> Dict[str, Any]:
     """
-    Create an expert witness persona and generate an avatar image using OpenAI API.
+    Create an expert witness persona and generate an avatar image.
 
     Args:
-        text_query (str): User's text query describing the expert witness needed
-        expert_type (str): Type of expert (technical, medical, financial, academic, general)
+        text_query (str): User's text query describing the case
+        expert_type (str): Ignored - simplified approach
 
     Returns:
         dict: Result containing persona details and image URL
     """
     try:
-        # Get OpenAI API key from environment
-        api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
+        # Get API keys from environment
+        openai_api_key = os.getenv("OPENAI_API_KEY")
+        together_api_key = os.getenv("TOGETHER_API_KEY")
+
+        if not openai_api_key:
             return {
                 "status": "error",
                 "message": "OpenAI API key not found in environment variables",
             }
 
-        # Initialize OpenAI client
-        client = OpenAI(api_key=api_key)
+        if not together_api_key:
+            return {
+                "status": "error",
+                "message": "Together AI API key not found in environment variables",
+            }
+
+        # Initialize OpenAI client for text generation
+        openai_client = OpenAI(api_key=openai_api_key)
 
         # Get configuration values
         chat_model = CONFIG["openai"]["chat_model"]
         max_tokens = CONFIG["openai"]["max_tokens"]
         temperature = CONFIG["openai"]["temperature"]
-        image_model = CONFIG["openai"]["image_model"]
-        image_size = CONFIG["image_generation"]["size"]
-        image_quality = CONFIG["image_generation"]["quality"]
-        image_n = CONFIG["image_generation"]["n"]
+        image_model = CONFIG["together_ai"]["image_model"]
 
         # Step 1: Generate expert witness persona using GPT-4o
         persona_prompt = EXPERT_WITNESS_USER_PROMPT_TEMPLATE.format(
             user_query=text_query
         )
 
-        persona_response = client.chat.completions.create(
+        persona_response = openai_client.chat.completions.create(
             model=chat_model,
             messages=[
                 {"role": "system", "content": EXPERT_WITNESS_SYSTEM_PROMPT},
@@ -122,18 +124,34 @@ def create_avatar_image(
 
         expert_persona = persona_response.choices[0].message.content
 
-        # Step 2: Generate avatar image using DALL-E 3
-        image_prompt = get_expert_image_prompt(expert_type, text_query)
+        # Step 2: Generate avatar image using Together AI FLUX
+        image_prompt = get_simple_image_prompt(text_query)
 
-        image_response = client.images.generate(
-            model=image_model,
-            prompt=image_prompt,
-            size=image_size,
-            quality=image_quality,
-            n=image_n,
+        together_response = requests.post(
+            "https://api.together.xyz/v1/images/generations",
+            headers={
+                "Authorization": f"Bearer {together_api_key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": image_model,
+                "prompt": image_prompt,
+                "width": 1024,
+                "height": 1024,
+                "steps": 20,
+                "n": 1,
+            },
+            timeout=60,
         )
 
-        image_url = image_response.data[0].url
+        if together_response.status_code != 200:
+            return {
+                "status": "error",
+                "message": f"Together AI API error: {together_response.status_code} - {together_response.text}",
+            }
+
+        image_data = together_response.json()
+        image_url = image_data["data"][0]["url"]
 
         return {
             "status": "ok",
@@ -141,7 +159,7 @@ def create_avatar_image(
             "data": {
                 "persona": expert_persona,
                 "image_url": image_url,
-                "expert_type": expert_type,
+                "expert_type": "simplified",
                 "query": text_query,
                 "avatar_id": f"expert_{hash(text_query) % 10000}",
                 "models_used": {"chat": chat_model, "image": image_model},
@@ -158,5 +176,5 @@ def get_avatar_status():
         "status": "ok",
         "message": "Avatar creation pipeline is operational",
         "chat_model": CONFIG["openai"]["chat_model"],
-        "image_model": CONFIG["openai"]["image_model"],
+        "image_model": CONFIG["together_ai"]["image_model"],
     }

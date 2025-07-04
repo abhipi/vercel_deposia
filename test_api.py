@@ -1,103 +1,142 @@
-#!/usr/bin/env python3
 """
-Test script to verify the hosted Deposia API is working correctly.
+Test script for Deposia Expert Witness Avatar Creator API
+
+Tests the simplified API endpoints using Together AI for image generation.
 """
 
 import requests
 import json
-from datetime import datetime
+import time
 
 # API Configuration
 API_BASE_URL = "https://vercel-deposia.vercel.app"
-ENDPOINTS = {
-    "health": f"{API_BASE_URL}/",
-    "detailed_health": f"{API_BASE_URL}/health",
-    "avatar_status": f"{API_BASE_URL}/avatar/status",
-    "avatar_create": f"{API_BASE_URL}/avatar/create-image",
-}
 
 
-def test_endpoint(name, url, method="GET", data=None):
-    """Test a single API endpoint."""
-    print(f"\n🔍 Testing {name}...")
-    print(f"   URL: {url}")
-
+def test_health_endpoint():
+    """Test the basic health check endpoint."""
+    print("🔍 Testing health endpoint...")
     try:
-        if method == "GET":
-            response = requests.get(url, timeout=10)
-        elif method == "POST":
-            response = requests.post(url, json=data, timeout=30)
-
-        print(f"   Status: {response.status_code}")
+        response = requests.get(f"{API_BASE_URL}/health", timeout=10)
+        print(f"Status Code: {response.status_code}")
 
         if response.status_code == 200:
-            try:
-                json_data = response.json()
-                print(f"   Response: {json.dumps(json_data, indent=2)}")
-                return True
-            except json.JSONDecodeError:
-                print(f"   Response: {response.text}")
-                return True
+            data = response.json()
+            print(f"✅ Health check passed: {data}")
+            return True
         else:
-            print(f"   Error: {response.text}")
+            print(f"❌ Health check failed: {response.text}")
             return False
-
-    except requests.exceptions.RequestException as e:
-        print(f"   Connection Error: {str(e)}")
+    except Exception as e:
+        print(f"❌ Health check error: {e}")
         return False
 
 
-def main():
-    """Run all API tests."""
-    print("🎯 Deposia API Test Suite")
-    print("=" * 50)
-    print(f"⏰ Test started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print(f"🌐 API Base URL: {API_BASE_URL}")
+def test_avatar_status_endpoint():
+    """Test the avatar status endpoint."""
+    print("\n🔍 Testing avatar status endpoint...")
+    try:
+        response = requests.get(f"{API_BASE_URL}/avatar/status", timeout=10)
+        print(f"Status Code: {response.status_code}")
 
-    results = {}
+        if response.status_code == 200:
+            data = response.json()
+            print(f"✅ Avatar status check passed: {data}")
+            return True
+        else:
+            print(f"❌ Avatar status check failed: {response.text}")
+            return False
+    except Exception as e:
+        print(f"❌ Avatar status error: {e}")
+        return False
 
-    # Test basic health check
-    results["health"] = test_endpoint("Health Check", ENDPOINTS["health"])
 
-    # Test detailed health check
-    results["detailed_health"] = test_endpoint(
-        "Detailed Health", ENDPOINTS["detailed_health"]
-    )
+def test_create_avatar_endpoint():
+    """Test the avatar creation endpoint with simplified query."""
+    print("\n🔍 Testing avatar creation endpoint...")
 
-    # Test avatar status
-    results["avatar_status"] = test_endpoint(
-        "Avatar Status", ENDPOINTS["avatar_status"]
-    )
-
-    # Test avatar creation (light test)
-    avatar_test_data = {
-        "text_query": "Test query for API verification",
-        "expert_type": "general",
+    # Simple test case
+    test_payload = {
+        "text_query": "Medical malpractice case involving surgical complications and patient safety protocols"
     }
-    results["avatar_create"] = test_endpoint(
-        "Avatar Creation",
-        ENDPOINTS["avatar_create"],
-        method="POST",
-        data=avatar_test_data,
-    )
+
+    try:
+        print(f"Sending request with payload: {json.dumps(test_payload, indent=2)}")
+
+        response = requests.post(
+            f"{API_BASE_URL}/api/create_avatar",
+            json=test_payload,
+            timeout=120,  # Extended timeout for AI generation
+        )
+
+        print(f"Status Code: {response.status_code}")
+
+        if response.status_code == 200:
+            data = response.json()
+            print("✅ Avatar creation successful!")
+            print(f"Status: {data.get('status')}")
+            print(f"Message: {data.get('message')}")
+
+            if "data" in data:
+                avatar_data = data["data"]
+                print("\nGenerated Avatar Data:")
+                print(f"- Avatar ID: {avatar_data.get('avatar_id')}")
+                print(f"- Expert Type: {avatar_data.get('expert_type')}")
+                print(f"- Models Used: {avatar_data.get('models_used')}")
+                print(f"- Image URL: {avatar_data.get('image_url')}")
+                print(f"- Persona Length: {len(avatar_data.get('persona', ''))}")
+
+                # Display first 200 characters of persona
+                persona = avatar_data.get("persona", "")
+                if persona:
+                    print(f"- Persona Preview: {persona[:200]}...")
+
+            return True
+        else:
+            print(f"❌ Avatar creation failed: {response.text}")
+            return False
+
+    except requests.exceptions.Timeout:
+        print("❌ Request timed out - avatar generation takes time")
+        return False
+    except Exception as e:
+        print(f"❌ Avatar creation error: {e}")
+        return False
+
+
+def run_comprehensive_test():
+    """Run all tests and provide a summary."""
+    print("🚀 Starting Deposia API Comprehensive Test")
+    print("=" * 60)
+
+    test_results = {}
+
+    # Run all tests
+    test_results["health"] = test_health_endpoint()
+    test_results["avatar_status"] = test_avatar_status_endpoint()
+    test_results["create_avatar"] = test_create_avatar_endpoint()
 
     # Summary
-    print("\n📊 Test Summary")
-    print("=" * 50)
-    passed = sum(1 for result in results.values() if result)
-    total = len(results)
+    print("\n" + "=" * 60)
+    print("📊 TEST SUMMARY")
+    print("=" * 60)
 
-    for endpoint, result in results.items():
-        status = "✅ PASS" if result else "❌ FAIL"
-        print(f"   {endpoint}: {status}")
+    total_tests = len(test_results)
+    passed_tests = sum(test_results.values())
 
-    print(f"\n🏆 Results: {passed}/{total} tests passed")
+    for test_name, result in test_results.items():
+        status = "✅ PASSED" if result else "❌ FAILED"
+        print(f"{test_name:<15}: {status}")
 
-    if passed == total:
+    print(f"\nOverall: {passed_tests}/{total_tests} tests passed")
+
+    if passed_tests == total_tests:
         print("🎉 All tests passed! The API is working correctly.")
     else:
-        print("⚠️  Some tests failed. Check the API deployment.")
+        print("⚠️  Some tests failed. Check the API configuration.")
+
+    return passed_tests == total_tests
 
 
 if __name__ == "__main__":
-    main()
+    success = run_comprehensive_test()
+    exit(0 if success else 1)

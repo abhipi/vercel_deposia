@@ -1,12 +1,11 @@
 [openai]
-# OpenAI API Configuration
+# OpenAI API Configuration for text generation
 chat_model = "gpt-4o"
-image_model = "dall-e-3"
-max_tokens = 1500
+max_tokens = 1000
 temperature = 0.7
 
-[image_generation]
-# DALL-E 3 Generation Settings
-size = "1024x1024"
-quality = "standard"  # standard, hd
-n = 1 
+[together_ai]
+# Together AI Configuration for image generation
+image_model = "black-forest-labs/FLUX.1-kontext-dev"
+max_tokens = 512
+temperature = 0.7 
