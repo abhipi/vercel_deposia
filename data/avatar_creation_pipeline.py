@@ -1,10 +1,11 @@
 """
 Avatar Creation Pipeline Module
 
-This module creates expert witness avatar personas with images using OpenAI API.
+This module creates expert witness avatar personas with images using OpenAI Responses API.
 """
 
 import os
+import base64
 from openai import OpenAI
 from typing import Dict, Any
 
@@ -38,14 +39,15 @@ except ImportError:
 DEFAULT_CONFIG = {
     "openai": {
         "chat_model": "gpt-4o",
-        "image_model": "gpt-image-1",
+        "image_model": "gpt-4o",  # Using GPT-4o for image generation via Responses API
         "max_tokens": 1500,
         "temperature": 0.7,
     },
     "image_generation": {
-        "size": "1024x1024",
-        "quality": "auto",  # auto, low, medium, high
-        "output_format": "jpeg",  # jpeg, png, webp
+        "size": "1024x1536",  # Portrait format
+        "quality": "medium",  # Medium quality as requested
+        "background": "transparent",
+        "output_format": "png",
     },
 }
 
@@ -75,14 +77,14 @@ def create_avatar_image(
     text_query: str, expert_type: str = "general"
 ) -> Dict[str, Any]:
     """
-    Create an expert witness persona and generate an avatar image using OpenAI API.
+    Create an expert witness persona and generate an avatar image using OpenAI Responses API.
 
     Args:
         text_query (str): User's text query describing the expert witness needed
         expert_type (str): Type of expert (technical, medical, financial, academic, general)
 
     Returns:
-        dict: Result containing persona details and image URL
+        dict: Result containing persona details and image data
     """
     try:
         # Get OpenAI API key from environment
@@ -100,12 +102,11 @@ def create_avatar_image(
         chat_model = CONFIG["openai"]["chat_model"]
         max_tokens = CONFIG["openai"]["max_tokens"]
         temperature = CONFIG["openai"]["temperature"]
-        image_model = CONFIG["openai"]["image_model"]
         image_size = CONFIG["image_generation"]["size"]
         image_quality = CONFIG["image_generation"]["quality"]
-        image_format = CONFIG["image_generation"]["output_format"]
+        image_background = CONFIG["image_generation"]["background"]
 
-        # Step 1: Generate expert witness persona using ChatGPT
+        # Step 1: Generate expert witness persona using GPT-4o
         persona_prompt = EXPERT_WITNESS_USER_PROMPT_TEMPLATE.format(
             user_query=text_query
         )
@@ -122,35 +123,39 @@ def create_avatar_image(
 
         expert_persona = persona_response.choices[0].message.content
 
-        # Step 2: Generate avatar image using GPT Image 1
+        # Step 2: Generate avatar image using Responses API with image_generation tool
         image_prompt = get_expert_image_prompt(expert_type, text_query)
 
-        # For gpt-image-1, we use different parameters
-        image_response = client.images.generate(
-            model=image_model,
-            prompt=image_prompt,
-            size=image_size,
-            quality=image_quality,
-            output_format=image_format,
+        # Use Responses API with image generation tool
+        response = client.responses.create(
+            model=chat_model,
+            input=f"Create a professional expert witness avatar image: {image_prompt}",
+            tools=[
+                {
+                    "type": "image_generation",
+                    "size": image_size,
+                    "quality": image_quality,
+                    "background": image_background,
+                }
+            ],
         )
 
-        # gpt-image-1 returns base64 encoded images
-        if hasattr(image_response.data[0], "b64_json"):
-            import base64
+        # Extract image data from response
+        image_data = [
+            output.result
+            for output in response.output
+            if output.type == "image_generation_call"
+        ]
 
-            image_base64 = image_response.data[0].b64_json
-            # For now, we'll still return the URL format if available
-            # or handle the base64 data appropriately
-            image_url = (
-                image_response.data[0].url
-                if hasattr(image_response.data[0], "url")
-                else None
-            )
-            if not image_url:
-                # Handle base64 data conversion if needed
-                image_url = f"data:image/jpeg;base64,{image_base64}"
-        else:
-            image_url = image_response.data[0].url
+        if not image_data:
+            return {
+                "status": "error",
+                "message": "No image was generated in the response",
+            }
+
+        # Convert base64 image to data URL
+        image_base64 = image_data[0]
+        image_url = f"data:image/png;base64,{image_base64}"
 
         return {
             "status": "ok",
@@ -161,7 +166,7 @@ def create_avatar_image(
                 "expert_type": expert_type,
                 "query": text_query,
                 "avatar_id": f"expert_{hash(text_query) % 10000}",
-                "models_used": {"chat": chat_model, "image": image_model},
+                "models_used": {"chat": chat_model, "image": chat_model},
             },
         }
 

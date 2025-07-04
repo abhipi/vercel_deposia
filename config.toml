@@ -1,12 +1,13 @@
 [openai]
 # OpenAI API Configuration
 chat_model = "gpt-4o"
-image_model = "gpt-image-1"
+image_model = "gpt-4o"  # Using GPT-4o for image generation via Responses API
 max_tokens = 1500
 temperature = 0.7
 
 [image_generation]
-# GPT Image 1 Generation Settings
-size = "1024x1024"
-quality = "auto"  # auto, low, medium, high
-output_format = "jpeg"  # jpeg, png, webp 
+# Image Generation Settings via Responses API
+size = "1024x1536"  # Portrait format
+quality = "medium"   # Medium quality
+background = "opaque"
+output_format = "png" 
