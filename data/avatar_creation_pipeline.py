@@ -40,7 +40,7 @@ DEFAULT_CONFIG = {
         "temperature": 0.7,
     },
     "together_ai": {
-        "image_model": "black-forest-labs/FLUX.1-kontext-dev",
+        "image_model": "black-forest-labs/FLUX.1-schnell",
         "max_tokens": 512,
         "temperature": 0.7,
     },
@@ -134,9 +134,10 @@ def create_avatar_image(text_query: str) -> Dict[str, Any]:
                 "model": image_model,
                 "prompt": image_prompt,
                 "width": 1024,
-                "height": 1024,
-                "steps": 20,
+                "height": 768,
+                "steps": 3,
                 "n": 1,
+                "response_format": "url",
             },
             timeout=60,
         )

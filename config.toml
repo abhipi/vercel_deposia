@@ -6,6 +6,6 @@ temperature = 0.7
 
 [together_ai]
 # Together AI Configuration for image generation
-image_model = "black-forest-labs/FLUX.1-kontext-dev"
+image_model = "black-forest-labs/FLUX.1-schnell"
 max_tokens = 512
 temperature = 0.7 

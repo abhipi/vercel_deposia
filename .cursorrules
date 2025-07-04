@@ -20,7 +20,7 @@ POST /api/create_avatar - Create expert witness avatar
 
 ### Technology Stack
 - **Text Generation**: OpenAI GPT-4o
-- **Image Generation**: Together AI FLUX.1-kontext-dev  
+- **Image Generation**: Together AI FLUX.1-schnell  
 - **Backend**: FastAPI
 - **Frontend**: Gradio
 - **Deployment**: Vercel
@@ -79,7 +79,7 @@ POST /api/create_avatar - Create expert witness avatar
     "query": "Original query",
     "models_used": {
       "chat": "gpt-4o", 
-      "image": "black-forest-labs/FLUX.1-kontext-dev"
+      "image": "black-forest-labs/FLUX.1-schnell"
     }
   }
 }
