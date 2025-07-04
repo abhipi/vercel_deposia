@@ -8,4 +8,9 @@ temperature = 0.7
 # Together AI Configuration for image generation
 image_model = "black-forest-labs/FLUX.1-schnell"
 max_tokens = 512
-temperature = 0.7 
+temperature = 0.7
+
+[interface]
+# Interface Configuration
+max_pdf_files = 10
+description = "Create expert witness personas from legal case content. Upload up to 10 PDF files and/or enter text descriptions." 
