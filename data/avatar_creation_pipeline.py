@@ -38,11 +38,15 @@ except ImportError:
 DEFAULT_CONFIG = {
     "openai": {
         "chat_model": "gpt-4o",
-        "image_model": "dall-e-3",
+        "image_model": "gpt-image-1",
         "max_tokens": 1500,
         "temperature": 0.7,
     },
-    "image_generation": {"size": "1024x1024", "quality": "standard", "n": 1},
+    "image_generation": {
+        "size": "1024x1024",
+        "quality": "auto",  # auto, low, medium, high
+        "output_format": "jpeg",  # jpeg, png, webp
+    },
 }
 
 
@@ -99,7 +103,7 @@ def create_avatar_image(
         image_model = CONFIG["openai"]["image_model"]
         image_size = CONFIG["image_generation"]["size"]
         image_quality = CONFIG["image_generation"]["quality"]
-        image_n = CONFIG["image_generation"]["n"]
+        image_format = CONFIG["image_generation"]["output_format"]
 
         # Step 1: Generate expert witness persona using ChatGPT
         persona_prompt = EXPERT_WITNESS_USER_PROMPT_TEMPLATE.format(
@@ -118,18 +122,35 @@ def create_avatar_image(
 
         expert_persona = persona_response.choices[0].message.content
 
-        # Step 2: Generate avatar image using DALL-E
+        # Step 2: Generate avatar image using GPT Image 1
         image_prompt = get_expert_image_prompt(expert_type, text_query)
 
+        # For gpt-image-1, we use different parameters
         image_response = client.images.generate(
             model=image_model,
             prompt=image_prompt,
             size=image_size,
             quality=image_quality,
-            n=image_n,
+            output_format=image_format,
         )
 
-        image_url = image_response.data[0].url
+        # gpt-image-1 returns base64 encoded images
+        if hasattr(image_response.data[0], "b64_json"):
+            import base64
+
+            image_base64 = image_response.data[0].b64_json
+            # For now, we'll still return the URL format if available
+            # or handle the base64 data appropriately
+            image_url = (
+                image_response.data[0].url
+                if hasattr(image_response.data[0], "url")
+                else None
+            )
+            if not image_url:
+                # Handle base64 data conversion if needed
+                image_url = f"data:image/jpeg;base64,{image_base64}"
+        else:
+            image_url = image_response.data[0].url
 
         return {
             "status": "ok",

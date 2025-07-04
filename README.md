@@ -48,11 +48,11 @@ vercel_deposia/
 
 ### Using the Hosted API
 
-The Deposia API is deployed and running at: **https://vercel-deposia-git-main-abhipis-projects.vercel.app**
+The Deposia API is deployed and running at: **https://vercel-deposia.vercel.app**
 
 1. **Create an expert witness avatar:**
    ```bash
-   curl -X POST "https://vercel-deposia-git-main-abhipis-projects.vercel.app/avatar/create-image" \
+   curl -X POST "https://vercel-deposia.vercel.app/avatar/create-image" \
      -H "Content-Type: application/json" \
      -d '{
        "text_query": "Need a cybersecurity expert for a data breach case",
@@ -122,7 +122,7 @@ For easy document processing, use the included Gradio web interface that connect
 
 ### Launch the Gradio App
 
-The Gradio app automatically connects to the hosted API at https://vercel-deposia-git-main-abhipis-projects.vercel.app
+The Gradio app automatically connects to the hosted API at https://vercel-deposia.vercel.app
 
 1. **Install dependencies:**
    ```bash
