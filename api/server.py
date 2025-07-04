@@ -1,6 +1,6 @@
 """
 Simplified FastAPI server for Deposia Expert Witness Avatar Creation.
-Only 3 endpoints: health, avatar status, and create avatar.
+Clean API structure with persona and avatar endpoints.
 """
 
 from __future__ import annotations
@@ -91,10 +91,12 @@ try:
         required_attrs=["create_avatar_image"],
     )
     create_avatar_image = avatar_pipeline.create_avatar_image
+    create_persona_only = avatar_pipeline.create_persona_only
     get_avatar_status = avatar_pipeline.get_avatar_status
 except (FileNotFoundError, ImportError, AttributeError) as e:
     logger.warning(f"Could not import avatar pipeline: {e}")
     create_avatar_image = None
+    create_persona_only = None
     get_avatar_status = None
 
 ####################################################################################################
@@ -116,9 +118,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
 ####################################################################################################
-# API ENDPOINTS - ONLY 3 TOTAL
+# API ENDPOINTS - CLEAN STRUCTURE
 ####################################################################################################
 
 
@@ -133,8 +134,8 @@ def health_check():
     }
 
 
-@app.get("/avatar/status")
-async def avatar_status():
+@app.get("/api/status")
+async def pipeline_status():
     """Get the status of the avatar creation pipeline."""
     if get_avatar_status is None:
         raise HTTPException(status_code=500, detail="Avatar pipeline not available")
@@ -146,14 +147,14 @@ class AvatarRequest(BaseModel):
     text_query: str = Field(..., description="Case description or legal content")
 
 
-@app.post("/api/create_avatar")
-async def create_avatar(
+@app.post("/api/avatar")
+async def create_avatar_endpoint(
     text_query: Optional[str] = Form(
         None, description="Case description or legal content"
     ),
     files: List[UploadFile] = File(None, description="PDF files to process"),
 ):
-    """Create an expert witness persona and avatar from case content or PDF files."""
+    """Create an expert witness persona and avatar image from case content or PDF files."""
     if create_avatar_image is None:
         raise HTTPException(
             status_code=500, detail="Avatar creation pipeline not available"
@@ -165,5 +166,50 @@ async def create_avatar(
             status_code=400, detail="Must provide either text_query or PDF files"
         )
 
-    # Process the request
+    # Process the request - returns both persona and image
     return await create_avatar_image(text_query=text_query, files=files)
+
+
+@app.post("/api/persona")
+async def create_persona_endpoint(
+    text_query: Optional[str] = Form(
+        None, description="Case description or legal content"
+    ),
+    files: List[UploadFile] = File(None, description="PDF files to process"),
+):
+    """Create just the expert witness persona from case content or PDF files (no image)."""
+    if create_persona_only is None:
+        raise HTTPException(
+            status_code=500, detail="Persona creation pipeline not available"
+        )
+
+    # Validate input - must have either text_query or files
+    if not text_query and not files:
+        raise HTTPException(
+            status_code=400, detail="Must provide either text_query or PDF files"
+        )
+
+    # Process the request - returns only persona
+    return await create_persona_only(text_query=text_query, files=files)
+
+
+####################################################################################################
+# BACKWARD COMPATIBILITY - Legacy endpoints
+####################################################################################################
+
+
+@app.get("/avatar/status")
+async def legacy_avatar_status():
+    """Legacy endpoint - redirects to new structure."""
+    return await pipeline_status()
+
+
+@app.post("/api/create_avatar")
+async def legacy_create_avatar(
+    text_query: Optional[str] = Form(
+        None, description="Case description or legal content"
+    ),
+    files: List[UploadFile] = File(None, description="PDF files to process"),
+):
+    """Legacy endpoint - redirects to new structure."""
+    return await create_avatar_endpoint(text_query=text_query, files=files)

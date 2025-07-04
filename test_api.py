@@ -1,6 +1,6 @@
 """
 Test script for the Deposia Expert Witness Avatar Creator API.
-Tests all 3 endpoints including PDF upload functionality.
+Tests the clean API structure with persona and avatar endpoints.
 """
 
 import requests
@@ -75,11 +75,11 @@ def test_health_check():
         return False
 
 
-def test_avatar_status():
-    """Test the avatar status endpoint."""
-    print("\nTesting avatar status endpoint...")
+def test_pipeline_status():
+    """Test the pipeline status endpoint."""
+    print("\nTesting pipeline status endpoint...")
     try:
-        response = requests.get(f"{BASE_URL}/avatar/status")
+        response = requests.get(f"{BASE_URL}/api/status")
         print(f"Status Code: {response.status_code}")
         print(f"Response: {json.dumps(response.json(), indent=2)}")
         return response.status_code == 200
@@ -89,16 +89,58 @@ def test_avatar_status():
 
 
 def test_create_avatar_text():
-    """Test creating an avatar with text query."""
+    """Test creating an avatar (persona + image) with text query."""
     print("\nTesting create avatar with text query...")
     try:
         data = {
             "text_query": "Construction defect case requiring structural engineering expert witness"
         }
-        response = requests.post(f"{BASE_URL}/api/create_avatar", data=data)
+        response = requests.post(f"{BASE_URL}/api/avatar", data=data)
         print(f"Status Code: {response.status_code}")
-        print(f"Response: {json.dumps(response.json(), indent=2)}")
-        return response.status_code == 200
+        response_data = response.json()
+        print(f"Response: {json.dumps(response_data, indent=2)}")
+
+        # Check if response contains both persona and image
+        if response.status_code == 200 and response_data.get("status") == "ok":
+            data = response_data.get("data", {})
+            has_persona = "persona" in data
+            has_image = "image_url" in data
+            has_summary = "persona_summary" in data
+            print(f"✓ Has persona: {has_persona}")
+            print(f"✓ Has image: {has_image}")
+            print(f"✓ Has persona summary: {has_summary}")
+            return has_persona and has_image and has_summary
+
+        return False
+    except Exception as e:
+        print(f"Error: {e}")
+        return False
+
+
+def test_create_persona_text():
+    """Test creating just a persona (no image) with text query."""
+    print("\nTesting create persona only with text query...")
+    try:
+        data = {
+            "text_query": "Medical malpractice case requiring expert witness in cardiology"
+        }
+        response = requests.post(f"{BASE_URL}/api/persona", data=data)
+        print(f"Status Code: {response.status_code}")
+        response_data = response.json()
+        print(f"Response: {json.dumps(response_data, indent=2)}")
+
+        # Check if response contains persona but no image
+        if response.status_code == 200 and response_data.get("status") == "ok":
+            data = response_data.get("data", {})
+            has_persona = "persona" in data
+            has_no_image = "image_url" not in data
+            has_no_summary = "persona_summary" not in data
+            print(f"✓ Has persona: {has_persona}")
+            print(f"✓ No image URL: {has_no_image}")
+            print(f"✓ No persona summary: {has_no_summary}")
+            return has_persona and has_no_image and has_no_summary
+
+        return False
     except Exception as e:
         print(f"Error: {e}")
         return False
@@ -120,12 +162,57 @@ def test_create_avatar_pdf():
             "text_query": "Additional context: This case requires immediate expert consultation"
         }
 
-        response = requests.post(
-            f"{BASE_URL}/api/create_avatar", files=files, data=data
-        )
+        response = requests.post(f"{BASE_URL}/api/avatar", files=files, data=data)
         print(f"Status Code: {response.status_code}")
-        print(f"Response: {json.dumps(response.json(), indent=2)}")
-        return response.status_code == 200
+        response_data = response.json()
+        print(f"Response: {json.dumps(response_data, indent=2)}")
+
+        # Check if response contains both persona and image
+        if response.status_code == 200 and response_data.get("status") == "ok":
+            data = response_data.get("data", {})
+            has_persona = "persona" in data
+            has_image = "image_url" in data
+            has_files = "files_processed" in data
+            print(f"✓ Has persona: {has_persona}")
+            print(f"✓ Has image: {has_image}")
+            print(f"✓ Has files processed: {has_files}")
+            return has_persona and has_image and has_files
+
+        return False
+    except Exception as e:
+        print(f"Error: {e}")
+        return False
+
+
+def test_create_persona_pdf():
+    """Test creating just a persona with PDF file upload."""
+    print("\nTesting create persona only with PDF upload...")
+    try:
+        # Create test PDF content
+        pdf_content = create_test_pdf()
+
+        # Prepare files for upload
+        files = [
+            ("files", ("test_case.pdf", pdf_content, "application/pdf")),
+        ]
+
+        response = requests.post(f"{BASE_URL}/api/persona", files=files)
+        print(f"Status Code: {response.status_code}")
+        response_data = response.json()
+        print(f"Response: {json.dumps(response_data, indent=2)}")
+
+        # Check if response contains persona but no image
+        if response.status_code == 200 and response_data.get("status") == "ok":
+            data = response_data.get("data", {})
+            has_persona = "persona" in data
+            has_no_image = "image_url" not in data
+            has_files = "files_processed" in data
+            print(f"✓ Has persona: {has_persona}")
+            print(f"✓ No image URL: {has_no_image}")
+            print(f"✓ Has files processed: {has_files}")
+            return has_persona and has_no_image and has_files
+
+        return False
     except Exception as e:
         print(f"Error: {e}")
         return False
@@ -147,10 +234,23 @@ def test_create_avatar_multiple_pdfs():
             ("files", ("case_details.pdf", pdf_content2, "application/pdf")),
         ]
 
-        response = requests.post(f"{BASE_URL}/api/create_avatar", files=files)
+        response = requests.post(f"{BASE_URL}/api/avatar", files=files)
         print(f"Status Code: {response.status_code}")
-        print(f"Response: {json.dumps(response.json(), indent=2)}")
-        return response.status_code == 200
+        response_data = response.json()
+        print(f"Response: {json.dumps(response_data, indent=2)}")
+
+        # Check if response contains both persona and image
+        if response.status_code == 200 and response_data.get("status") == "ok":
+            data = response_data.get("data", {})
+            has_persona = "persona" in data
+            has_image = "image_url" in data
+            files_processed = data.get("files_processed", [])
+            print(f"✓ Has persona: {has_persona}")
+            print(f"✓ Has image: {has_image}")
+            print(f"✓ Files processed: {len(files_processed)}")
+            return has_persona and has_image and len(files_processed) == 2
+
+        return False
     except Exception as e:
         print(f"Error: {e}")
         return False
@@ -163,9 +263,11 @@ def main():
 
     tests = [
         test_health_check,
-        test_avatar_status,
+        test_pipeline_status,
         test_create_avatar_text,
+        test_create_persona_text,
         test_create_avatar_pdf,
+        test_create_persona_pdf,
         test_create_avatar_multiple_pdfs,
     ]
 
@@ -183,9 +285,11 @@ def main():
     print("Test Results Summary:")
     test_names = [
         "Health Check",
-        "Avatar Status",
+        "Pipeline Status",
         "Create Avatar (Text)",
+        "Create Persona Only (Text)",
         "Create Avatar (PDF)",
+        "Create Persona Only (PDF)",
         "Create Avatar (Multiple PDFs)",
     ]
 
