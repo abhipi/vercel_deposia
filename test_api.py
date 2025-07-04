@@ -1,142 +1,202 @@
 """
-Test script for Deposia Expert Witness Avatar Creator API
-
-Tests the simplified API endpoints using Together AI for image generation.
+Test script for the Deposia Expert Witness Avatar Creator API.
+Tests all 3 endpoints including PDF upload functionality.
 """
 
 import requests
 import json
+import os
+import io
 import time
 
-# API Configuration
-API_BASE_URL = "https://vercel-deposia.vercel.app"
+# Configuration
+BASE_URL = "http://localhost:8000"  # Change this for your deployment
+TEST_PDF_CONTENT = """Sample Legal Case Document
+
+Case Overview:
+This is a sample legal case involving construction defects in a commercial building. 
+The case requires expert testimony from a structural engineer with experience in 
+commercial construction and building code compliance.
+
+Key Issues:
+- Foundation settlement causing structural damage
+- Improper waterproofing leading to water intrusion
+- Non-compliance with local building codes
+- Estimated damages exceed $2 million
+
+Expert Requirements:
+- Licensed structural engineer
+- 15+ years commercial construction experience
+- Expert witness experience in similar cases
+- Knowledge of applicable building codes
+"""
 
 
-def test_health_endpoint():
-    """Test the basic health check endpoint."""
-    print("🔍 Testing health endpoint...")
+def create_test_pdf():
+    """Create a simple test PDF file in memory."""
     try:
-        response = requests.get(f"{API_BASE_URL}/health", timeout=10)
-        print(f"Status Code: {response.status_code}")
+        from reportlab.pdfgen import canvas
+        from reportlab.lib.pagesizes import letter
 
-        if response.status_code == 200:
-            data = response.json()
-            print(f"✅ Health check passed: {data}")
-            return True
-        else:
-            print(f"❌ Health check failed: {response.text}")
-            return False
+        buffer = io.BytesIO()
+        p = canvas.Canvas(buffer, pagesize=letter)
+
+        # Add text to the PDF
+        text_lines = TEST_PDF_CONTENT.split("\n")
+        y_position = 750
+
+        for line in text_lines:
+            if line.strip():
+                p.drawString(50, y_position, line)
+                y_position -= 20
+                if y_position < 50:  # Start new page if needed
+                    p.showPage()
+                    y_position = 750
+
+        p.save()
+        buffer.seek(0)
+        return buffer.getvalue()
+    except ImportError:
+        # If reportlab is not available, create a simple text file
+        print("Note: reportlab not available, creating simple text file for testing")
+        return TEST_PDF_CONTENT.encode("utf-8")
+
+
+def test_health_check():
+    """Test the health check endpoint."""
+    print("Testing health check endpoint...")
+    try:
+        response = requests.get(f"{BASE_URL}/health")
+        print(f"Status Code: {response.status_code}")
+        print(f"Response: {json.dumps(response.json(), indent=2)}")
+        return response.status_code == 200
     except Exception as e:
-        print(f"❌ Health check error: {e}")
+        print(f"Error: {e}")
         return False
 
 
-def test_avatar_status_endpoint():
+def test_avatar_status():
     """Test the avatar status endpoint."""
-    print("\n🔍 Testing avatar status endpoint...")
+    print("\nTesting avatar status endpoint...")
     try:
-        response = requests.get(f"{API_BASE_URL}/avatar/status", timeout=10)
+        response = requests.get(f"{BASE_URL}/avatar/status")
         print(f"Status Code: {response.status_code}")
-
-        if response.status_code == 200:
-            data = response.json()
-            print(f"✅ Avatar status check passed: {data}")
-            return True
-        else:
-            print(f"❌ Avatar status check failed: {response.text}")
-            return False
+        print(f"Response: {json.dumps(response.json(), indent=2)}")
+        return response.status_code == 200
     except Exception as e:
-        print(f"❌ Avatar status error: {e}")
+        print(f"Error: {e}")
         return False
 
 
-def test_create_avatar_endpoint():
-    """Test the avatar creation endpoint with simplified query."""
-    print("\n🔍 Testing avatar creation endpoint...")
-
-    # Simple test case
-    test_payload = {
-        "text_query": "Medical malpractice case involving surgical complications and patient safety protocols"
-    }
-
+def test_create_avatar_text():
+    """Test creating an avatar with text query."""
+    print("\nTesting create avatar with text query...")
     try:
-        print(f"Sending request with payload: {json.dumps(test_payload, indent=2)}")
+        data = {
+            "text_query": "Construction defect case requiring structural engineering expert witness"
+        }
+        response = requests.post(f"{BASE_URL}/api/create_avatar", data=data)
+        print(f"Status Code: {response.status_code}")
+        print(f"Response: {json.dumps(response.json(), indent=2)}")
+        return response.status_code == 200
+    except Exception as e:
+        print(f"Error: {e}")
+        return False
+
+
+def test_create_avatar_pdf():
+    """Test creating an avatar with PDF file upload."""
+    print("\nTesting create avatar with PDF upload...")
+    try:
+        # Create test PDF content
+        pdf_content = create_test_pdf()
+
+        # Prepare files for upload
+        files = [
+            ("files", ("test_case.pdf", pdf_content, "application/pdf")),
+        ]
+
+        data = {
+            "text_query": "Additional context: This case requires immediate expert consultation"
+        }
 
         response = requests.post(
-            f"{API_BASE_URL}/api/create_avatar",
-            json=test_payload,
-            timeout=120,  # Extended timeout for AI generation
+            f"{BASE_URL}/api/create_avatar", files=files, data=data
         )
-
         print(f"Status Code: {response.status_code}")
-
-        if response.status_code == 200:
-            data = response.json()
-            print("✅ Avatar creation successful!")
-            print(f"Status: {data.get('status')}")
-            print(f"Message: {data.get('message')}")
-
-            if "data" in data:
-                avatar_data = data["data"]
-                print("\nGenerated Avatar Data:")
-                print(f"- Avatar ID: {avatar_data.get('avatar_id')}")
-                print(f"- Expert Type: {avatar_data.get('expert_type')}")
-                print(f"- Models Used: {avatar_data.get('models_used')}")
-                print(f"- Image URL: {avatar_data.get('image_url')}")
-                print(f"- Persona Length: {len(avatar_data.get('persona', ''))}")
-
-                # Display first 200 characters of persona
-                persona = avatar_data.get("persona", "")
-                if persona:
-                    print(f"- Persona Preview: {persona[:200]}...")
-
-            return True
-        else:
-            print(f"❌ Avatar creation failed: {response.text}")
-            return False
-
-    except requests.exceptions.Timeout:
-        print("❌ Request timed out - avatar generation takes time")
-        return False
+        print(f"Response: {json.dumps(response.json(), indent=2)}")
+        return response.status_code == 200
     except Exception as e:
-        print(f"❌ Avatar creation error: {e}")
+        print(f"Error: {e}")
         return False
 
 
-def run_comprehensive_test():
-    """Run all tests and provide a summary."""
-    print("🚀 Starting Deposia API Comprehensive Test")
-    print("=" * 60)
+def test_create_avatar_multiple_pdfs():
+    """Test creating an avatar with multiple PDF files."""
+    print("\nTesting create avatar with multiple PDF uploads...")
+    try:
+        # Create test PDF content
+        pdf_content1 = create_test_pdf()
+        pdf_content2 = TEST_PDF_CONTENT.replace(
+            "Case Overview:", "Additional Case Details:"
+        ).encode("utf-8")
 
-    test_results = {}
+        # Prepare multiple files for upload
+        files = [
+            ("files", ("case_summary.pdf", pdf_content1, "application/pdf")),
+            ("files", ("case_details.pdf", pdf_content2, "application/pdf")),
+        ]
 
-    # Run all tests
-    test_results["health"] = test_health_endpoint()
-    test_results["avatar_status"] = test_avatar_status_endpoint()
-    test_results["create_avatar"] = test_create_avatar_endpoint()
+        response = requests.post(f"{BASE_URL}/api/create_avatar", files=files)
+        print(f"Status Code: {response.status_code}")
+        print(f"Response: {json.dumps(response.json(), indent=2)}")
+        return response.status_code == 200
+    except Exception as e:
+        print(f"Error: {e}")
+        return False
 
-    # Summary
-    print("\n" + "=" * 60)
-    print("📊 TEST SUMMARY")
-    print("=" * 60)
 
-    total_tests = len(test_results)
-    passed_tests = sum(test_results.values())
+def main():
+    """Run all tests."""
+    print("Testing Deposia Expert Witness Avatar Creator API")
+    print("=" * 50)
 
-    for test_name, result in test_results.items():
-        status = "✅ PASSED" if result else "❌ FAILED"
-        print(f"{test_name:<15}: {status}")
+    tests = [
+        test_health_check,
+        test_avatar_status,
+        test_create_avatar_text,
+        test_create_avatar_pdf,
+        test_create_avatar_multiple_pdfs,
+    ]
 
-    print(f"\nOverall: {passed_tests}/{total_tests} tests passed")
+    results = []
+    for test in tests:
+        try:
+            result = test()
+            results.append(result)
+            time.sleep(1)  # Brief pause between tests
+        except Exception as e:
+            print(f"Test failed with exception: {e}")
+            results.append(False)
 
-    if passed_tests == total_tests:
-        print("🎉 All tests passed! The API is working correctly.")
-    else:
-        print("⚠️  Some tests failed. Check the API configuration.")
+    print("\n" + "=" * 50)
+    print("Test Results Summary:")
+    test_names = [
+        "Health Check",
+        "Avatar Status",
+        "Create Avatar (Text)",
+        "Create Avatar (PDF)",
+        "Create Avatar (Multiple PDFs)",
+    ]
 
-    return passed_tests == total_tests
+    for i, (name, result) in enumerate(zip(test_names, results)):
+        status = "✅ PASS" if result else "❌ FAIL"
+        print(f"{i+1}. {name}: {status}")
+
+    passed = sum(results)
+    total = len(results)
+    print(f"\nOverall: {passed}/{total} tests passed")
 
 
 if __name__ == "__main__":
-    success = run_comprehensive_test()
-    exit(0 if success else 1)
+    main()

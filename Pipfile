@@ -19,8 +19,10 @@ openai = "*"
 PyPDF2 = "*"
 Pillow = "*"
 requests = "*"
+python-multipart = "*"
 
 [dev-packages]
+reportlab = "*"
 
 [requires]
 python_version = "3.9"

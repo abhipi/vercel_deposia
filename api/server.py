@@ -10,9 +10,9 @@ import sys
 import asyncio
 import importlib.util
 from pydantic import BaseModel, Field
-from typing import List, AsyncGenerator, Awaitable
+from typing import List, AsyncGenerator, Awaitable, Optional
 
-from fastapi import FastAPI, Query, HTTPException, Request
+from fastapi import FastAPI, Query, HTTPException, Request, File, UploadFile, Form
 from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
@@ -147,11 +147,23 @@ class AvatarRequest(BaseModel):
 
 
 @app.post("/api/create_avatar")
-async def create_avatar(request: AvatarRequest):
-    """Create an expert witness persona and avatar from case content."""
+async def create_avatar(
+    text_query: Optional[str] = Form(
+        None, description="Case description or legal content"
+    ),
+    files: List[UploadFile] = File(None, description="PDF files to process"),
+):
+    """Create an expert witness persona and avatar from case content or PDF files."""
     if create_avatar_image is None:
         raise HTTPException(
             status_code=500, detail="Avatar creation pipeline not available"
         )
 
-    return create_avatar_image(request.text_query)
+    # Validate input - must have either text_query or files
+    if not text_query and not files:
+        raise HTTPException(
+            status_code=400, detail="Must provide either text_query or PDF files"
+        )
+
+    # Process the request
+    return await create_avatar_image(text_query=text_query, files=files)

@@ -1,62 +1,128 @@
 # Deposia Expert Witness Avatar Creator
 
-A simplified AI-powered system for creating professional expert witness personas with avatar images from legal case content.
+A simplified AI-powered system for creating expert witness personas with avatar images from legal case content. Supports both text queries and PDF file uploads.
 
 ## Features
 
-- **Simple PDF Upload**: Extract text from legal documents
-- **Direct Text Input**: Enter case descriptions directly  
-- **AI-Generated Personas**: Creates professional expert witness profiles using GPT-4o
-- **Avatar Images**: Generates professional headshots using FLUX.1 via Together AI
-- **REST API**: Hosted on Vercel for easy integration
-- **Gradio Interface**: User-friendly web interface
+- **Text Input**: Create expert witness personas from text descriptions
+- **PDF Upload**: Upload one or multiple PDF files containing legal case content
+- **AI-Powered**: Uses OpenAI GPT-4o for persona generation and Together AI FLUX.1-schnell for avatar images
+- **Simple API**: Only 3 endpoints for maximum simplicity
 
-## Quick Start
+## API Endpoints
 
-### 1. Environment Setup
+### 1. Health Check
+```
+GET /health
+```
+Returns server health status.
 
-You'll need API keys for:
-- **OpenAI** (for GPT-4o text generation)
-- **Together AI** (for FLUX.1 image generation)
+### 2. Avatar Status
+```
+GET /avatar/status
+```
+Returns the status of the avatar creation pipeline.
 
-Create a `.env` file:
+### 3. Create Avatar
+```
+POST /api/create_avatar
+```
+Create an expert witness persona and avatar from case content.
+
+**Input Options:**
+
+**Option 1: Text Query**
 ```bash
-OPENAI_API_KEY=your_openai_api_key_here
-TOGETHER_API_KEY=your_together_ai_api_key_here
+curl -X POST "http://localhost:8000/api/create_avatar" \
+  -F "text_query=Construction defect case requiring structural engineering expert witness"
 ```
 
-### 2. Install Dependencies
-
-Using pipenv (recommended):
+**Option 2: PDF Upload**
 ```bash
-pipenv install
+curl -X POST "http://localhost:8000/api/create_avatar" \
+  -F "files=@case_document.pdf"
 ```
 
-### 3. Run the Gradio Interface
-
+**Option 3: Multiple PDFs**
 ```bash
-pipenv run python launch_gradio.py
+curl -X POST "http://localhost:8000/api/create_avatar" \
+  -F "files=@case_summary.pdf" \
+  -F "files=@expert_requirements.pdf"
 ```
 
-The interface will be available at `http://localhost:7860`
-
-## API Usage
-
-### Health Check
+**Option 4: Text + PDFs**
 ```bash
-curl https://vercel-deposia.vercel.app/health
+curl -X POST "http://localhost:8000/api/create_avatar" \
+  -F "text_query=Additional context about the case" \
+  -F "files=@case_document.pdf"
 ```
 
-### Create Avatar
-```bash
-curl -X POST "https://vercel-deposia.vercel.app/api/create_avatar" \
-  -H "Content-Type: application/json" \
-  -d '{"text_query": "Medical malpractice case involving surgical error"}'
+## Response Format
+
+```json
+{
+  "status": "ok",
+  "message": "Expert witness avatar created successfully from 2 PDF file(s)",
+  "data": {
+    "persona": "Generated expert witness profile...",
+    "image_url": "https://...",
+    "avatar_id": "expert_1234",
+    "query": "Original query or PDF content",
+    "files_processed": ["case_summary.pdf", "expert_requirements.pdf"],
+    "models_used": {
+      "chat": "gpt-4o", 
+      "image": "black-forest-labs/FLUX.1-schnell"
+    }
+  }
+}
 ```
+
+## Setup
+
+1. **Install Dependencies**
+   ```bash
+   pipenv install
+   pipenv install --dev  # For testing
+   ```
+
+2. **Environment Variables**
+   ```bash
+   export OPENAI_API_KEY="your-openai-api-key"
+   export TOGETHER_API_KEY="your-together-ai-api-key"
+   ```
+
+3. **Run the Server**
+   ```bash
+   pipenv run uvicorn api.server:app --host 0.0.0.0 --port 8000
+   ```
+
+## Testing
+
+Run the comprehensive test suite:
+```bash
+pipenv run python test_api.py
+```
+
+The test suite includes:
+- Health check
+- Avatar status
+- Text-based avatar creation
+- Single PDF upload
+- Multiple PDF uploads
+
+## PDF Support
+
+The system supports PDF text extraction using PyPDF2. It will:
+- Extract text from all pages in each PDF
+- Combine content from multiple PDFs
+- Include filename headers for organization
+- Handle PDF processing errors gracefully
+
+**Supported file types:** `.pdf` only
 
 ## Configuration
 
-Edit `config.toml` to customize:
+Edit `config.toml` to customize model settings:
 
 ```toml
 [openai]
@@ -65,114 +131,19 @@ max_tokens = 1000
 temperature = 0.7
 
 [together_ai]
-image_model = "black-forest-labs/FLUX.1-kontext-dev"
+image_model = "black-forest-labs/FLUX.1-schnell"
 max_tokens = 512
 temperature = 0.7
 ```
 
-## How It Works
+## Deployment
 
-1. **Input**: Upload PDF or enter case description
-2. **Text Processing**: Extract and clean case content
-3. **Persona Generation**: GPT-4o creates professional expert witness profile
-4. **Avatar Creation**: FLUX.1 generates professional headshot image
-5. **Output**: Complete expert witness package with persona and avatar
+Deploy to Vercel using the included `vercel.json` configuration.
 
-## API Endpoints
+## Architecture
 
-- `GET /health` - API health check
-- `GET /avatar/status` - Avatar pipeline status  
-- `POST /api/create_avatar` - Create expert witness avatar
-
-### Request Format
-```json
-{
-  "text_query": "Your case description here"
-}
-```
-
-### Response Format
-```json
-{
-  "status": "ok",
-  "message": "Expert witness avatar created successfully",
-  "data": {
-    "persona": "Generated expert witness profile...",
-    "image_url": "https://...",
-    "avatar_id": "expert_1234",
-    "models_used": {
-      "chat": "gpt-4o",
-      "image": "black-forest-labs/FLUX.1-kontext-dev"
-    }
-  }
-}
-```
-
-## Technology Stack
-
-- **FastAPI**: REST API framework
-- **Gradio**: Web interface
-- **OpenAI GPT-4o**: Text generation
-- **Together AI FLUX.1**: Image generation
-- **Vercel**: Hosting platform
-- **Python 3.10+**: Runtime environment
-
-## File Structure
-
-```
-vercel_deposia/
-├── api/
-│   └── server.py                 # FastAPI server
-├── data/
-│   └── avatar_creation_pipeline.py  # Core avatar creation logic
-├── gradio_app.py                 # Gradio web interface
-├── launch_gradio.py              # Interface launcher
-├── config.toml                   # Configuration settings
-├── Pipfile                       # Dependencies
-└── README.md                     # This file
-```
-
-## Testing
-
-Test the API locally:
-```bash
-pipenv run python test_api.py
-```
-
-Test with the hosted API:
-```bash
-curl https://vercel-deposia.vercel.app/health
-```
-
-## Environment Variables
-
-Required:
-- `OPENAI_API_KEY` - OpenAI API key for GPT-4o
-- `TOGETHER_API_KEY` - Together AI API key for FLUX.1
-
-## Troubleshooting
-
-### Common Issues
-
-1. **API Key Errors**: Ensure both OpenAI and Together AI keys are set
-2. **Dependency Issues**: Use `pipenv install` to ensure clean environment
-3. **Network Timeouts**: Together AI image generation can take 30-60 seconds
-
-### Debug Mode
-
-Run with debug output:
-```bash
-PYTHONPATH=. pipenv run python gradio_app.py
-```
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
-
-## License
-
-This project is licensed under the MIT License. 
+- **FastAPI Backend**: Handles API requests and file uploads
+- **OpenAI GPT-4o**: Generates expert witness personas
+- **Together AI FLUX.1**: Creates professional avatar images
+- **PyPDF2**: Extracts text content from PDF files
+- **Simple Design**: Focused on core functionality only 
