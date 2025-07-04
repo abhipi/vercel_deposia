@@ -48,6 +48,9 @@ Thumbs.db
 # Gradio temporary files
 flagged/
 gradio_cached_examples/
+.gradio/
+gradio_app.py
+launch_gradio.py
 
 # Temporary files
 *.tmp
