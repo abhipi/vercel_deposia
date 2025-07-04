@@ -1,6 +1,6 @@
 """
-A simplified FastAPI server with health check endpoint.
-Maintains the ability to dynamically import functions from the data folder.
+Simplified FastAPI server for Deposia Expert Witness Avatar Creation.
+Only 3 endpoints: health, avatar status, and create avatar.
 """
 
 from __future__ import annotations
@@ -100,7 +100,7 @@ except (FileNotFoundError, ImportError, AttributeError) as e:
 ####################################################################################################
 # FASTAPI APP
 ####################################################################################################
-app = FastAPI(title="Simplified API Server", version="1.0.0")
+app = FastAPI(title="Deposia Expert Witness Avatar Creator", version="1.0.0")
 
 # Define allowed origins
 origins = [
@@ -118,17 +118,13 @@ app.add_middleware(
 
 
 ####################################################################################################
-# HEALTH CHECK ENDPOINTS
+# API ENDPOINTS - ONLY 3 TOTAL
 ####################################################################################################
-@app.get("/")
-def read_root():
-    """Root endpoint for basic health check."""
-    return {"status": "ok", "message": "Server is running"}
 
 
 @app.get("/health")
 def health_check():
-    """Detailed health check endpoint."""
+    """Health check endpoint."""
     return {
         "status": "ok",
         "message": "Server is healthy",
@@ -137,9 +133,6 @@ def health_check():
     }
 
 
-####################################################################################################
-# AVATAR CREATION ENDPOINTS
-####################################################################################################
 @app.get("/avatar/status")
 async def avatar_status():
     """Get the status of the avatar creation pipeline."""
@@ -149,48 +142,16 @@ async def avatar_status():
     return get_avatar_status()
 
 
-class AvatarImageRequest(BaseModel):
-    text_query: str = Field(..., description="Description of the expert witness needed")
-    expert_type: str = Field(
-        "general",
-        description="Type of expert witness (general, technical, medical, financial, academic)",
-    )
+class AvatarRequest(BaseModel):
+    text_query: str = Field(..., description="Case description or legal content")
 
 
-@app.post("/avatar/create-image")
-async def create_avatar_image_endpoint(request: AvatarImageRequest):
-    """Create an expert witness persona and generate an avatar image using OpenAI API."""
+@app.post("/api/create_avatar")
+async def create_avatar(request: AvatarRequest):
+    """Create an expert witness persona and avatar from case content."""
     if create_avatar_image is None:
         raise HTTPException(
-            status_code=500, detail="Avatar image creation not available"
+            status_code=500, detail="Avatar creation pipeline not available"
         )
 
-    return create_avatar_image(request.text_query, request.expert_type)
-
-
-####################################################################################################
-# EXAMPLE: HOW TO USE DYNAMIC IMPORTS (COMMENTED OUT)
-####################################################################################################
-# Example of how to dynamically import and use functions from the data folder:
-#
-# try:
-#     # Import a module from the data folder
-#     example_module = dynamic_import(
-#         module_path=os.path.join(DATA_FOLDER, "example_module.py"),
-#         module_name="example_module",
-#         required_attrs=["example_function"]
-#     )
-#     example_function = example_module.example_function
-# except (FileNotFoundError, ImportError, AttributeError) as e:
-#     logger.warning(f"Could not import example module: {e}")
-#     example_function = None
-#
-# @app.post("/example")
-# async def example_endpoint():
-#     if example_function is None:
-#         raise HTTPException(status_code=500, detail="Example function not available")
-#
-#     result = example_function()
-#     return {"result": result}
-
-# Uncomment and modify the above example to add your own endpoints that use data folder functions
+    return create_avatar_image(request.text_query)

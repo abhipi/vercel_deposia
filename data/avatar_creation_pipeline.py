@@ -68,15 +68,12 @@ def load_config():
 CONFIG = load_config()
 
 
-def create_avatar_image(
-    text_query: str, expert_type: str = "general"
-) -> Dict[str, Any]:
+def create_avatar_image(text_query: str) -> Dict[str, Any]:
     """
     Create an expert witness persona and generate an avatar image.
 
     Args:
         text_query (str): User's text query describing the case
-        expert_type (str): Ignored - simplified approach
 
     Returns:
         dict: Result containing persona details and image URL
@@ -159,7 +156,6 @@ def create_avatar_image(
             "data": {
                 "persona": expert_persona,
                 "image_url": image_url,
-                "expert_type": "simplified",
                 "query": text_query,
                 "avatar_id": f"expert_{hash(text_query) % 10000}",
                 "models_used": {"chat": chat_model, "image": image_model},

@@ -1,0 +1,122 @@
+# Deposia Expert Witness Avatar Creator - Cursor Rules
+
+## Overview
+This is a simplified AI-powered system for creating expert witness personas with avatar images from legal case content. Keep everything simple and focused.
+
+## API Design Principles
+
+### Simplicity First
+- **ONLY 3 ENDPOINTS TOTAL**: `/health`, `/avatar/status`, `/api/create_avatar`
+- **NO expert types**: Removed all expert type functionality for simplicity
+- **Single purpose**: Focus only on creating expert witness personas from case content
+- **Minimal prompts**: Keep prompts short and to the point
+
+### Endpoint Structure
+```
+GET  /health           - Health check
+GET  /avatar/status    - Pipeline status  
+POST /api/create_avatar - Create expert witness avatar
+```
+
+### Technology Stack
+- **Text Generation**: OpenAI GPT-4o
+- **Image Generation**: Together AI FLUX.1-kontext-dev  
+- **Backend**: FastAPI
+- **Frontend**: Gradio
+- **Deployment**: Vercel
+- **Dependencies**: pipenv
+
+## File Structure Rules
+
+### Core Files
+- `api/server.py` - FastAPI server with ONLY 3 endpoints
+- `data/avatar_creation_pipeline.py` - Core avatar creation logic  
+- `gradio_app.py` - Simple Gradio interface
+- `config.toml` - Configuration for models
+- `Pipfile` - Dependencies
+
+### Configuration
+- OpenAI API key for GPT-4o text generation
+- Together AI API key for FLUX.1 image generation
+- Keep config.toml simple with just model settings
+
+## Code Guidelines
+
+### Function Signatures
+- `create_avatar_image(text_query: str)` - NO expert_type parameter
+- All functions should be simple and focused
+- No complex types or multiple expert categories
+
+### Prompts
+- Keep prompts minimal and direct
+- Focus on the core query/PDF content
+- No elaborate system prompts or complex templates
+- Example: "Create a professional expert witness persona for this case: {user_query}"
+
+### Error Handling
+- Simple error messages
+- Return status "ok" or "error" 
+- Include helpful error descriptions
+
+## API Request/Response
+
+### Request Format
+```json
+{
+  "text_query": "Case description or legal content"
+}
+```
+
+### Response Format  
+```json
+{
+  "status": "ok",
+  "message": "Expert witness avatar created successfully",
+  "data": {
+    "persona": "Generated expert witness profile...",
+    "image_url": "https://...",
+    "avatar_id": "expert_1234",
+    "query": "Original query",
+    "models_used": {
+      "chat": "gpt-4o", 
+      "image": "black-forest-labs/FLUX.1-kontext-dev"
+    }
+  }
+}
+```
+
+## What NOT to Do
+
+### Avoid Complexity
+- ❌ Do NOT add expert type functionality back
+- ❌ Do NOT add complex prompt templates  
+- ❌ Do NOT add multiple endpoint variations
+- ❌ Do NOT over-engineer the API
+- ❌ Do NOT add unnecessary fields to requests/responses
+
+### Keep It Simple
+- ✅ Focus on core functionality only
+- ✅ Use simple, direct prompts
+- ✅ Maintain 3 endpoints maximum
+- ✅ Keep configuration minimal
+- ✅ Use clear, simple variable names
+
+## Development Workflow
+
+### Testing
+- Use `pipenv run python test_api.py` to test all endpoints
+- Test locally with `pipenv run python launch_gradio.py`
+- Verify hosted API at https://vercel-deposia.vercel.app
+
+### Adding Features
+- Before adding ANY new feature, ask: "Does this add unnecessary complexity?"
+- Prefer modifying existing simple functionality over adding new endpoints
+- Keep the 3-endpoint limit strict
+
+### Dependencies
+- Use pipenv for all dependency management
+- Keep dependencies minimal and focused
+- Update Pipfile when adding new requirements
+
+## Remember
+This is intentionally a SIMPLE system. The goal is expert witness avatar creation with minimal complexity. Resist the urge to add features that don't directly serve this core purpose. 
